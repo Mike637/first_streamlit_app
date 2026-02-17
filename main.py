@@ -13,7 +13,9 @@ st.title('My first App')
 def get_promt(query_text):
     query_vector = model.encode(query_text, convert_to_numpy=True).astype('float32')
     _, indices = index.search(query_vector.reshape(1, -1), k=20)
-    new_texts = list(map(lambda el: texts[el], indices[0]))
+    # Фильтруем корректные индексы
+    valid_indices = [i for i in indices[0] if 0 <= i < len(texts)]
+    new_texts = [texts[i] for i in valid_indices]
     st.write(new_texts)
 
 
