@@ -5,7 +5,8 @@ from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
-'''
+from langchain_qdrant import QdrantVectorStore
+
 PROJECT_DIR = os.path.dirname(__file__)
 HELP_PATH = os.path.join(PROJECT_DIR,'help') # замените на ваш путь
 
@@ -22,7 +23,6 @@ def add_html_paths(folder_path) -> List[str]:
 
 # Загружаем HTML файлы
 html_paths = add_html_paths(HELP_PATH)
-
 
 # Класс для извлечения текста из HTML
 class MyBSHTMLLoader:
@@ -43,44 +43,16 @@ documents = [Document(page_content=MyBSHTMLLoader(path).load()) for path in html
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=50)
 
 # Разделяем документы
-all_splits = text_splitter.split_documents(documents)
+docs = text_splitter.split_documents(documents)
 
 # Получаем список текстов
-texts = [doc.page_content for doc in all_splits]
+texts = [doc.page_content for doc in docs]
 
-# Инициализация модели для эмбеддингов
-#model = SentenceTransformer("all-MiniLM-L6-v2")
-
-# Функция для получения эмбеддингов
-if __name__ == '__main__':
-    embed_texts = HuggingFaceEmbeddings(model_name = 'paraphrase-multilingual-MiniLM-L12-v2')
-
-    # Создаем FAISS базу, передавая функцию эмбеддингов
-    faiss_db = FAISS.from_texts(texts, embed_texts)
-
-    # Сохраняем базу
-    faiss_db.save_local("my_faiss_index")
-
-    print('База успешно сохранена')
-'''
-from langchain_community.document_loaders import TextLoader
-from langchain_qdrant import Qdrant
-from langchain_text_splitters import CharacterTextSplitter
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from qdrant_client import QdrantClient
-from langchain_qdrant import QdrantVectorStore
-
-loader = TextLoader("file.txt",encoding = 'utf-8')
-documents = loader.load()
-text_splitter = CharacterTextSplitter(chunk_size=508,chunk_overlap=20)
-docs = text_splitter.split_documents(documents)
-embeddings = HuggingFaceEmbeddings(model_name="intfloat/multilingual-e5-small")
-
+embed_texts = HuggingFaceEmbeddings(model_name = 'paraphrase-multilingual-MiniLM-L12-v2')
 vectorestore = QdrantVectorStore.from_documents(
-    docs,
-    embeddings,
-    path="./qdrant_data",
-    collection_name="my_collection")
+        docs,
+        embed_texts,
+        path="./qdrant_data",
+        collection_name="my_collection")
+
+print('База успешно сохранена')
