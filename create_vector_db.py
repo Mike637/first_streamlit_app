@@ -8,7 +8,8 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 
 PROJECT_DIR = os.path.dirname(__file__)
-HELP_PATH = os.path.join(PROJECT_DIR,'help') # замените на ваш путь
+HELP_PATH = os.path.join(PROJECT_DIR, 'help')  # замените на ваш путь
+
 
 # Функция для поиска HTML файлов
 def add_html_paths(folder_path) -> List[str]:
@@ -21,8 +22,10 @@ def add_html_paths(folder_path) -> List[str]:
                 html_files_list.append(html_path)
     return html_files_list
 
+
 # Загружаем HTML файлы
 html_paths = add_html_paths(HELP_PATH)
+
 
 # Класс для извлечения текста из HTML
 class MyBSHTMLLoader:
@@ -36,11 +39,12 @@ class MyBSHTMLLoader:
         soup = BeautifulSoup(html_content, self.parser)
         return soup.get_text()
 
+
 # Загружаем документы
 documents = [Document(page_content=MyBSHTMLLoader(path).load()) for path in html_paths]
 
 # Разделитель текста
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=50)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
 
 # Разделяем документы
 docs = text_splitter.split_documents(documents)
@@ -48,11 +52,14 @@ docs = text_splitter.split_documents(documents)
 # Получаем список текстов
 texts = [doc.page_content for doc in docs]
 
-embed_texts = HuggingFaceEmbeddings(model_name = 'paraphrase-multilingual-MiniLM-L12-v2')
+embed_texts = HuggingFaceEmbeddings(
+    model_name='paraphrase-multilingual-MiniLM-L12-v2',
+    encode_kwargs={'batch_size': 64}
+)
 vectorestore = QdrantVectorStore.from_documents(
-        docs,
-        embed_texts,
-        path="./qdrant_data",
-        collection_name="my_collection")
+    docs,
+    embed_texts,
+    path="./qdrant_data",
+    collection_name="my_collection")
 
 print('База успешно сохранена')

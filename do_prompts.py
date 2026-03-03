@@ -3,22 +3,33 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import os
 from langchain_core.prompts import PromptTemplate
-from create_vector_db import vectorestore
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
+from langchain_community.embeddings import HuggingFaceEmbeddings
 from gigachat import GigaChat
 from config import gigachat_key
+from langchain_qdrant import QdrantVectorStore
+
+embed_model = HuggingFaceEmbeddings(
+    model_name="paraphrase-multilingual-MiniLM-L12-v2"
+)
+
+vectorestore = QdrantVectorStore.from_existing_collection(
+    path="./qdrant_data",
+    collection_name="my_collection",
+    embedding=embed_model
+)
 
 retriever = vectorestore.as_retriever(search_kwargs={"k": 3})
-query = "типы конечных элементов в фидесисе"
+query = "что такое APREPRO"
 results = retriever.get_relevant_documents(query)
 
 with GigaChat(credentials=gigachat_key, verify_ssl_certs=False) as giga:
     context = "\n".join([doc.page_content for doc in results])
     prompt = f"""
-    Ты — эксперт, который может отвечать только на основе предоставленных документов.
-    Используй **только** эти документы. Не добавляй информации, которой нет в них.
-    Если не знаешь , ответь я не знаю
+    Ты отвечаешь строго ТОЛЬКО на основе предоставленного документа.
+    Если в контексте нет  точного ответа на вопрос.
+    ты ОБЯЗАН ответить: Я не знаю
     Документы:
     {context}
 
