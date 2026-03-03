@@ -1,3 +1,5 @@
 help/
 __pycache__/
 .idea/
+qdrant_data/
+*.txt
