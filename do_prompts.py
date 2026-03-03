@@ -20,16 +20,17 @@ vectorestore = QdrantVectorStore.from_existing_collection(
     embedding=embed_model
 )
 
-retriever = vectorestore.as_retriever(search_kwargs={"k": 3})
-query = "что такое APREPRO"
+retriever = vectorestore.as_retriever(search_kwargs={"k": 6})
+query = "как  импортировать файл cdb"
 results = retriever.get_relevant_documents(query)
-
+print(results)
 with GigaChat(credentials=gigachat_key, verify_ssl_certs=False) as giga:
     context = "\n".join([doc.page_content for doc in results])
     prompt = f"""
-    Ты отвечаешь строго ТОЛЬКО на основе предоставленного документа.
-    Если в контексте нет  точного ответа на вопрос.
-    ты ОБЯЗАН ответить: Я не знаю
+    Ты эксперт по документации Fidesys.
+Отвечай  на основе переданного контекста.
+Не используй внешние знания.
+Если информации нет — отвечай: В документации нет информации.
     Документы:
     {context}
 
@@ -40,3 +41,5 @@ with GigaChat(credentials=gigachat_key, verify_ssl_certs=False) as giga:
 
     response = giga.chat(prompt)
     print("Ответ GigaChat:", response.choices[0].message.content)
+
+print(context)

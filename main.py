@@ -1,27 +1,48 @@
+import asyncio
 import streamlit as st
 import os
-import faiss
-from sentence_transformers import SentenceTransformer
-from create_vector_db import texts
+from langchain_qdrant import QdrantVectorStore
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from gigachat import GigaChat
 
-DIR_NAME = os.path.dirname(__file__)
-index = faiss.read_index(os.path.join(DIR_NAME, 'my_faiss_index', 'index.faiss'))
-model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+key = 'YOUR_KEY_HERE'
 st.title('My first App')
 
+embed_model = HuggingFaceEmbeddings(
+    model_name="paraphrase-multilingual-MiniLM-L12-v2"
+)
 
-def get_promt(query_text):
-    query_vector = model.encode(query_text, convert_to_numpy=True).astype('float32')
-    _, indices = index.search(query_vector.reshape(1, -1), k=20)
-    # Фильтруем корректные индексы
-    valid_indices = [i for i in indices[0] if 0 <= i < len(texts)]
-    new_texts = [texts[i] for i in valid_indices]
-    st.write(new_texts)
+vectorestore = QdrantVectorStore.from_existing_collection(
+    path="./qdrant_data",
+    collection_name="my_collection",
+    embedding=embed_model
+)
+retriever = vectorestore.as_retriever(search_kwargs={"k": 6})
 
+async def get_promt(query_text):
+    results = retriever.get_relevant_documents(query_text)
+    async with GigaChat(credentials=key, verify_ssl_certs=False) as giga:
+        context = "\n".join([doc.page_content for doc in results])
+        prompt = f"""
+Ты эксперт по документации Fidesys.
+Отвечай на основе переданного контекста.
+Не используй внешние знания.
+Если информации нет — отвечай: В документации нет информации.
+Документы:
+{context}
+
+Вопрос: {query_text}
+
+Ответ:
+"""
+        response = await giga.chat(prompt)
+        return response.choices[0].message.content
 
 
 with st.form(key='my_form'):
-    question = st.text_input("input question")
-    submitted = st.form_submit_button("click")
+    question = st.text_input("Введите вопрос")
+    submitted = st.form_submit_button("Спросить")
     if submitted:
-        get_promt(question)
+        # запускаем async функцию через asyncio.run()
+        answer = asyncio.run(get_promt(question))
+        st.write(answer)

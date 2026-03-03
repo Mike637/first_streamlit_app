@@ -8,7 +8,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 
 PROJECT_DIR = os.path.dirname(__file__)
-HELP_PATH = os.path.join(PROJECT_DIR, 'help')  # замените на ваш путь
+HELP_PATH = os.path.join(PROJECT_DIR, 'help')
 
 
 # Функция для поиска HTML файлов
@@ -19,6 +19,10 @@ def add_html_paths(folder_path) -> List[str]:
         for html_file in html_files:
             html_path = os.path.join(path, html_file)
             if os.path.exists(html_path):
+                with open(html_path, encoding='utf-8') as file_path:
+                    file = file_path.read()
+                    if 'Your browser does not support JavaScript.' in file:
+                        continue
                 html_files_list.append(html_path)
     return html_files_list
 
@@ -42,9 +46,8 @@ class MyBSHTMLLoader:
 
 # Загружаем документы
 documents = [Document(page_content=MyBSHTMLLoader(path).load()) for path in html_paths]
-
 # Разделитель текста
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=100)
 
 # Разделяем документы
 docs = text_splitter.split_documents(documents)
@@ -56,6 +59,7 @@ embed_texts = HuggingFaceEmbeddings(
     model_name='paraphrase-multilingual-MiniLM-L12-v2',
     encode_kwargs={'batch_size': 64}
 )
+
 vectorestore = QdrantVectorStore.from_documents(
     docs,
     embed_texts,
