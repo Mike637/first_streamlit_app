@@ -1,10 +1,4 @@
-from langchain_community.vectorstores import FAISS
-from sentence_transformers import SentenceTransformer
-import faiss
-import os
-from langchain_core.prompts import PromptTemplate
-from langchain_core.runnables import RunnablePassthrough
-from langchain_core.output_parsers import StrOutputParser
+
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from gigachat import GigaChat
 from config import gigachat_key
@@ -21,16 +15,16 @@ vectorestore = QdrantVectorStore.from_existing_collection(
 )
 
 retriever = vectorestore.as_retriever(search_kwargs={"k": 6})
-query = "как  импортировать файл cdb"
+query = "роторной динамика"
 results = retriever.get_relevant_documents(query)
-print(results)
-with GigaChat(credentials=gigachat_key, verify_ssl_certs=False) as giga:
+with GigaChat(credentials=gigachat_key, verify_ssl_certs=False, temperature = 0) as giga:
     context = "\n".join([doc.page_content for doc in results])
     prompt = f"""
-    Ты эксперт по документации Fidesys.
-Отвечай  на основе переданного контекста.
-Не используй внешние знания.
-Если информации нет — отвечай: В документации нет информации.
+   "Ты эксперт по документации Fidesys. "
+            "Анализируй документы и формируй ответ строго на их основе. "
+            "делай логические выводы, но только из представленного контекста. "
+            "Не добавляй внешние знания. "
+            "Выводи только итоговый ответ без пояснений."
     Документы:
     {context}
 
@@ -38,8 +32,6 @@ with GigaChat(credentials=gigachat_key, verify_ssl_certs=False) as giga:
 
     Ответ:
     """
-
     response = giga.chat(prompt)
     print("Ответ GigaChat:", response.choices[0].message.content)
 
-print(context)
