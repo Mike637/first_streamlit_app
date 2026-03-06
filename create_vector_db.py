@@ -3,7 +3,6 @@ from typing import List
 from bs4 import BeautifulSoup
 from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 
@@ -56,7 +55,7 @@ docs = text_splitter.split_documents(documents)
 texts = [doc.page_content for doc in docs]
 
 embed_texts = HuggingFaceEmbeddings(
-    model_name='paraphrase-multilingual-MiniLM-L12-v2',
+    model_name='BAAI/bge-m3',
     encode_kwargs={'batch_size': 64}
 )
 
@@ -64,6 +63,7 @@ vectorestore = QdrantVectorStore.from_documents(
     docs,
     embed_texts,
     path="./qdrant_data",
-    collection_name="my_collection")
+    collection_name="my_collection",
+force_recreate = True )
 
 print('База успешно сохранена')

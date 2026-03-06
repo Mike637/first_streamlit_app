@@ -1,37 +1,68 @@
-
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from gigachat import GigaChat
-from config import gigachat_key
 from langchain_qdrant import QdrantVectorStore
-
+from langchain_community.chat_models import ChatOllama
+from langchain.prompts import PromptTemplate
+from langchain_community.llms import GPT4All
+from langchain_community.llms import LlamaCpp
+# Embeddings
 embed_model = HuggingFaceEmbeddings(
-    model_name="paraphrase-multilingual-MiniLM-L12-v2"
+    model_name="BAAI/bge-m3"
 )
 
-vectorestore = QdrantVectorStore.from_existing_collection(
+# Vector store
+vectorstore = QdrantVectorStore.from_existing_collection(
     path="./qdrant_data",
     collection_name="my_collection",
     embedding=embed_model
 )
 
-retriever = vectorestore.as_retriever(search_kwargs={"k": 6})
-query = "роторной динамика"
-results = retriever.get_relevant_documents(query)
-with GigaChat(credentials=gigachat_key, verify_ssl_certs=False, temperature = 0) as giga:
-    context = "\n".join([doc.page_content for doc in results])
-    prompt = f"""
-   "Ты эксперт по документации Fidesys. "
-            "Анализируй документы и формируй ответ строго на их основе. "
-            "делай логические выводы, но только из представленного контекста. "
-            "Не добавляй внешние знания. "
-            "Выводи только итоговый ответ без пояснений."
-    Документы:
-    {context}
+retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
 
-    Вопрос: {query}
+# LLM
+llm = LlamaCpp(
+    model_path="./model/mistral-7b-instruct-v0.2.Q4_0.gguf",
+    n_ctx = 8192,
+    n_threads = 8
+)
 
-    Ответ:
-    """
-    response = giga.chat(prompt)
-    print("Ответ GigaChat:", response.choices[0].message.content)
+# Prompt template
+template = """
+Ты эксперт по документации Fidesys.
+
+Правила:
+- Отвечай ТОЛЬКО на основе предоставленных документов.
+- Не используй внешние знания.
+- Если в документах нет ответа — напиши: "Ответ не найден в документации".
+- Не придумывай информацию.
+
+Документы:
+{context}
+
+Вопрос:
+{question}
+
+Ответ:
+"""
+
+prompt = PromptTemplate(
+    template=template,
+    input_variables=["context", "question"]
+)
+
+# user query
+query = "что такое ортотропия"
+
+# retrieve docs
+docs = retriever.invoke(query)
+
+context = "\n\n".join([doc.page_content for doc in docs])
+
+# format prompt
+final_prompt = prompt.format(context=context, question=query)
+
+# LLM answer
+response = llm.invoke(final_prompt,max_tokens = 1024)
+
+print(response)
+#print(model.generate(prompt))
 
