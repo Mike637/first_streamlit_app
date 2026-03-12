@@ -5,3 +5,7 @@ qdrant_data/
 *.txt
 example.py
 model/
+files_for_training_RAG/
+training_RAG.py
+training_do_prompt.py
+example_db/

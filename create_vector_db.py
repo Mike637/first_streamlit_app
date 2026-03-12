@@ -5,6 +5,7 @@ from langchain.schema import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
+import os
 
 PROJECT_DIR = os.path.dirname(__file__)
 HELP_PATH = os.path.join(PROJECT_DIR, 'help')
@@ -20,8 +21,8 @@ def add_html_paths(folder_path) -> List[str]:
             if os.path.exists(html_path):
                 with open(html_path, encoding='utf-8') as file_path:
                     file = file_path.read()
-                    if 'Your browser does not support JavaScript.' in file:
-                        continue
+                    #if 'javascript' in file.lower():
+                        #continue
                 html_files_list.append(html_path)
     return html_files_list
 
@@ -40,30 +41,34 @@ class MyBSHTMLLoader:
         with open(self.file_path, encoding='utf-8') as f:
             html_content = f.read()
         soup = BeautifulSoup(html_content, self.parser)
-        return soup.get_text()
+        text = '\n'.join([line.strip() for line in soup.get_text('\n').splitlines() if line.strip()])
+        return text
 
 
 # Загружаем документы
-documents = [Document(page_content=MyBSHTMLLoader(path).load()) for path in html_paths]
+documents = [Document(page_content=MyBSHTMLLoader(path).load(),metadata={"source": os.path.basename(path)}) for path in html_paths]
+
 # Разделитель текста
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000, chunk_overlap=100)
+text_splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
 
 # Разделяем документы
-docs = text_splitter.split_documents(documents)
-
+chunks = text_splitter.split_documents(documents)
 # Получаем список текстов
-texts = [doc.page_content for doc in docs]
 
+#for chunk in chunks:
+    #print(chunk.page_content)
 embed_texts = HuggingFaceEmbeddings(
-    model_name='BAAI/bge-m3',
+    model_name='intfloat/multilingual-e5-large',
     encode_kwargs={'batch_size': 64}
 )
 
 vectorestore = QdrantVectorStore.from_documents(
-    docs,
+    chunks,
     embed_texts,
     path="./qdrant_data",
     collection_name="my_collection",
 force_recreate = True )
 
 print('База успешно сохранена')
+
+

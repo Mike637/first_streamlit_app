@@ -1,12 +1,22 @@
 from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from langchain_qdrant import QdrantVectorStore
-from langchain_community.chat_models import ChatOllama
 from langchain.prompts import PromptTemplate
-from langchain_community.llms import GPT4All
 from langchain_community.llms import LlamaCpp
+from langchain.chains import RetrievalQA
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import CrossEncoderReranker
+
 # Embeddings
+
+model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-large")
+reranker = CrossEncoderReranker(
+    model=model,
+    top_n=10
+)
+
 embed_model = HuggingFaceEmbeddings(
-    model_name="BAAI/bge-m3"
+    model_name='intfloat/multilingual-e5-large'
 )
 
 # Vector store
@@ -16,24 +26,38 @@ vectorstore = QdrantVectorStore.from_existing_collection(
     embedding=embed_model
 )
 
-retriever = vectorstore.as_retriever(search_kwargs={"k": 5})
+retriever = vectorstore.as_retriever(
+    search_type="mmr",
+    search_kwargs={
+        "k": 10,
+        "fetch_k": 50
+    })
 
+compression_retriever = ContextualCompressionRetriever(
+    base_retriever=retriever,
+    base_compressor=reranker
+)
 # LLM
 llm = LlamaCpp(
     model_path="./model/mistral-7b-instruct-v0.2.Q4_0.gguf",
-    n_ctx = 8192,
-    n_threads = 8
+    n_ctx=8192,
+    n_threads=8,
+    temperature=0.1
 )
 
 # Prompt template
 template = """
-Ты эксперт по документации Fidesys.
+Используй ТОЛЬКО информацию из документов.
 
-Правила:
-- Отвечай ТОЛЬКО на основе предоставленных документов.
-- Не используй внешние знания.
-- Если в документах нет ответа — напиши: "Ответ не найден в документации".
-- Не придумывай информацию.
+Если в документах нет ответа,
+напиши строго:
+"Ответ не найден в документации".
+
+Запрещено:
+- придумывать
+- использовать внешние знания
+- делать предположения
+
 
 Документы:
 {context}
@@ -50,19 +74,15 @@ prompt = PromptTemplate(
 )
 
 # user query
-query = "что такое ортотропия"
+query = "какие примеры есть для гармонического анализа в документации"
 
-# retrieve docs
-docs = retriever.invoke(query)
-
-context = "\n\n".join([doc.page_content for doc in docs])
-
-# format prompt
-final_prompt = prompt.format(context=context, question=query)
-
-# LLM answer
-response = llm.invoke(final_prompt,max_tokens = 1024)
-
-print(response)
-#print(model.generate(prompt))
+qa_chain = RetrievalQA.from_chain_type(
+    llm=llm,
+    retriever=compression_retriever,
+    chain_type="stuff",
+    chain_type_kwargs={"prompt": prompt},
+    return_source_documents=True
+)
+response = qa_chain.invoke({"query": query})
+print(response['result'])
 
