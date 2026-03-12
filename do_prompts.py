@@ -1,4 +1,3 @@
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from langchain_qdrant import QdrantVectorStore
 from langchain.prompts import PromptTemplate
@@ -6,6 +5,7 @@ from langchain_community.llms import LlamaCpp
 from langchain.chains import RetrievalQA
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CrossEncoderReranker
+from langchain_huggingface import HuggingFaceEmbeddings
 
 # Embeddings
 
