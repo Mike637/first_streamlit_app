@@ -6,7 +6,7 @@ from langchain.chains import RetrievalQA
 from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain_huggingface import HuggingFaceEmbeddings
-
+import multiprocessing
 # Embeddings
 
 model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-large")
@@ -40,9 +40,12 @@ compression_retriever = ContextualCompressionRetriever(
 # LLM
 llm = LlamaCpp(
     model_path="./model/mistral-7b-instruct-v0.2.Q4_0.gguf",
-    n_ctx=8192,
-    n_threads=8,
-    temperature=0.1
+    verbose = False,
+    n_ctx=10000,
+    n_threads= multiprocessing.cpu_count(),
+    temperature=0.1,
+    model_kwargs = {"log_level":0},
+    n_batch = 512
 )
 
 # Prompt template
@@ -74,7 +77,7 @@ prompt = PromptTemplate(
 )
 
 # user query
-query = "какие примеры есть для гармонического анализа в документации"
+query = "что такое фидесис? "
 
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
