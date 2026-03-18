@@ -12,7 +12,7 @@ import multiprocessing
 model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-large")
 reranker = CrossEncoderReranker(
     model=model,
-    top_n=10
+    top_n=5
 )
 
 embed_model = HuggingFaceEmbeddings(
@@ -50,17 +50,19 @@ llm = LlamaCpp(
 
 # Prompt template
 template = """
-Используй ТОЛЬКО информацию из документов.
+Ты отвечаешь строго по документации.
 
-Если в документах нет ответа,
-напиши строго:
-"Ответ не найден в документации".
+Правила:
+1. Используй ТОЛЬКО факты из документов
+2. Если ответа нет → напиши:
+"Ответ не найден в документации"
+3. Запрещено:
+   - придумывать
+   - добавлять знания
+   - делать выводы
+   - продолжать диалог
 
-Запрещено:
-- придумывать
-- использовать внешние знания
-- делать предположения
-
+Отвечай КРАТКО и ТОЧНО.
 
 Документы:
 {context}
@@ -77,12 +79,12 @@ prompt = PromptTemplate(
 )
 
 # user query
-query = "что такое фидесис? "
+query = "что такое ортотропия ? "
 
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
     retriever=compression_retriever,
-    chain_type="stuff",
+    #chain_type="refine",
     chain_type_kwargs={"prompt": prompt},
     return_source_documents=True
 )
