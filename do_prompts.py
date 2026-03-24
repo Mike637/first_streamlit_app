@@ -79,7 +79,7 @@ prompt = PromptTemplate(
 )
 
 # user query
-query = "что такое ортотропия ? "
+query = "что такое фильтр ? "
 
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
