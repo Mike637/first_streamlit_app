@@ -7,8 +7,10 @@ from langchain.retrievers import ContextualCompressionRetriever
 from langchain.retrievers.document_compressors import CrossEncoderReranker
 from langchain_huggingface import HuggingFaceEmbeddings
 import multiprocessing
+import time
 # Embeddings
-
+start = time.ctime()
+print(start)
 model = HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-large")
 reranker = CrossEncoderReranker(
     model=model,
@@ -18,7 +20,9 @@ reranker = CrossEncoderReranker(
 embed_model = HuggingFaceEmbeddings(
     model_name='intfloat/multilingual-e5-large'
 )
-
+end = time.ctime()
+print(end)
+'''
 # Vector store
 vectorstore = QdrantVectorStore.from_existing_collection(
     path="./qdrant_data",
@@ -40,12 +44,12 @@ compression_retriever = ContextualCompressionRetriever(
 # LLM
 llm = LlamaCpp(
     model_path="./model/mistral-7b-instruct-v0.2.Q4_0.gguf",
-    verbose = False,
+    verbose=False,
     n_ctx=10000,
-    n_threads= multiprocessing.cpu_count(),
+    n_threads=multiprocessing.cpu_count(),
     temperature=0.1,
-    model_kwargs = {"log_level":0},
-    n_batch = 512
+    model_kwargs={"log_level": 0},
+    n_batch=512
 )
 
 # Prompt template
@@ -84,10 +88,10 @@ query = "что такое фильтр ? "
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
     retriever=compression_retriever,
-    #chain_type="refine",
+    # chain_type="refine",
     chain_type_kwargs={"prompt": prompt},
     return_source_documents=True
 )
 response = qa_chain.invoke({"query": query})
 print(response['result'])
-
+'''

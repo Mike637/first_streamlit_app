@@ -11,7 +11,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance
-from langchain_huggingface import HuggingFaceEmbeddings
+from config import settings
+from langchain_openai import OpenAIEmbeddings
 
 PROJECT_DIR = os.path.dirname(__file__)
 HELP_PATH = os.path.join(PROJECT_DIR, 'help')
@@ -20,7 +21,7 @@ COLLECTION_NAME = "my_collection"
 CHUNK_SIZE = 800
 CHUNK_OVERLAP = 100
 BATCH_SIZE = 128
-EMBED_MODEL = "intfloat/multilingual-e5-large"
+EMBED_MODEL = "text-embedding-3-large"
 RECREATE_COLLECTION = True
 MAX_WORKERS = os.cpu_count()
 logging.basicConfig(
@@ -90,6 +91,7 @@ def init_qdrant() -> QdrantVectorStore:
     client = QdrantClient(path="./qdrant_data")
     if RECREATE_COLLECTION:
         if client.collection_exists(COLLECTION_NAME):
+            client.delete_collection(COLLECTION_NAME)
             logger.warning("Удаляем старую коллекцию")
 
     if not client.collection_exists(COLLECTION_NAME):
@@ -97,14 +99,21 @@ def init_qdrant() -> QdrantVectorStore:
         client.create_collection(
             collection_name=COLLECTION_NAME,
             vectors_config=VectorParams(
-                size=1024,
+                size=3072,
                 distance=Distance.COSINE
             )
         )
+    '''   
     embed_texts = HuggingFaceEmbeddings(
         model_name=EMBED_MODEL,
         encode_kwargs={'batch_size': 64,
-                       'normalize_embeddings': True}
+                       'normalize_embeddings': True})
+    '''
+
+    embed_texts = OpenAIEmbeddings(
+        api_key=settings.OPEN_AI_KEY.get_secret_value(),
+        base_url=settings.BASE_URL,
+        model=EMBED_MODEL
     )
 
     return QdrantVectorStore(
@@ -132,4 +141,4 @@ def main() -> None:
 
 
 if __name__ == '__main__':
-    main()
+    pass
