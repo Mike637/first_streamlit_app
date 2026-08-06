@@ -10,3 +10,4 @@ training_do_prompt.py
 example_db/
 .env
 training_help/
+text_files/
