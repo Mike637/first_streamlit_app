@@ -65,31 +65,19 @@ class HtmlParser:
 
         table_text = []
         soap = self.create_html_parser()
+
         body = soap.find('body')
+
         if not body:
             return
+        title = soap.find('title')
+
+        title_text = '[TITLE]' + title.get_text() + '[/TITLE]' if title else ''
         delete_tags = ['script', 'noscript', 'link', 'footer', 'style', 'div#header', 'form']
+
         for tag in body.select(', '.join(delete_tags)):
             tag.decompose()
-        # for tag in body.find_all(["a"]):
-        # tag.replace_with('')
-        for tag in body.find_all(["ul"]):
-            for list in tag.find_all(["li"]):
-                list.string = list.get_text().replace('\n', '').replace('\t', '')
-            tag.string = '[LIST]' + tag.get_text() + '[/LIST]'
-        for tag in body.find_all(["blockquote", "pre"]):
-            for paragraph in tag.select('p.command'):
-                paragraph.string = paragraph.get_text()
-            tag.string = f'[COMMANDS] {tag.get_text()}\n[/COMMANDS]'
-        for tag in body.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7']):
-            heading_text = tag.get_text().replace("\n", "")
-            tag.string = f'[HEADING_{tag.name}] {heading_text} [/HEADING_{tag.name}]\n'
-        for tag in body.find_all(['img']):
-            src = tag["src"]
-            tag.replace_with(f'[IMAGE] {src} [/IMAGE]')
-        for tag in body.find_all(['p']):
-            parargraph_text = tag.get_text(" ", strip=True).replace('\n', '')
-            tag.string = '[PARAGRAPH]' + parargraph_text + '[/PARAGRAPH]'
+
         for tag in body.find_all(['table']):
             trs = tag.find_all(['tr'])
             table_header_rows = trs[0]
@@ -99,8 +87,27 @@ class HtmlParser:
             for row in rows:
                 table_text.extend(get_text_from_row(row, header_lines))
             tag.replace_with('\n[TABLE]\n ' + "\n".join(line for line in table_text) + ' \n[/TABLE]\n')
+        for tag in body.find_all(["ul"]):
+            for list in tag.find_all(["li"]):
+                list.string = list.get_text().replace('\n', '').replace('\t', '')
+            tag.string = '[LIST]' + tag.get_text() + '[/LIST]'
+        for tag in body.find_all(["blockquote", "pre"]):
+            for paragraph in tag.select('p.command'):
+                paragraph.string = paragraph.get_text()
+            tag.string = f'[COMMANDS] {tag.get_text()}\n[/COMMANDS]'
+        for tag in body.find_all(['img']):
+            src = tag["src"]
+            tag.replace_with(f'[IMAGE] {src} [/IMAGE]')
+
+        for tag in body.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7']):
+            heading_text = tag.get_text().replace("\n", "")
+            tag.string = f'[HEADING_{tag.name}] {heading_text} [/HEADING_{tag.name}]\n'
+        for tag in body.find_all(['p']):
+            parargraph_text = tag.get_text(" ", strip=True).replace('\n', '')
+            tag.string = '[PARAGRAPH]' + parargraph_text + '[/PARAGRAPH]'
+
         lines = [line for line in body.get_text(strip=False).split('\n') if line]
-        return '\n'.join(line for line in lines).replace('\t', '').replace('\xa0', ' ')
+        return f'{title_text}\n' + '\n'.join(line for line in lines).replace('\t', '').replace('\xa0', ' ')
 
 
 def get_html_paths(folder_path: str) -> List[str]:
@@ -137,5 +144,18 @@ def main():
         list(tqdm(executor.map(save_txt_file, tasks), desc=f'Saving file...', total=len(tasks)))
 
 
+def collect_all_documentation():
+    text = ""
+    for path in htmls:
+        parser = HtmlParser(path)
+        doc = parser.main()
+        if not doc:
+            continue
+        text += f'{doc}\n'
+    return text
+
+
 if __name__ == '__main__':
     main()
+    #res = collect_all_documentation()
+    #print(res)
