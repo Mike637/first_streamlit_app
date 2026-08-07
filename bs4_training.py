@@ -76,7 +76,8 @@ class HtmlParser:
         for tag in body.find_all(["ul"]):
             for list in tag.find_all(["li"]):
                 list.string = list.get_text().replace('\n', '').replace('\t', '')
-        for tag in body.find_all(["blockquote"]):
+            tag.string = '[LIST]' + tag.get_text() + '[/LIST]'
+        for tag in body.find_all(["blockquote", "pre"]):
             for paragraph in tag.select('p.command'):
                 paragraph.string = paragraph.get_text()
             tag.string = f'[COMMANDS] {tag.get_text()}\n[/COMMANDS]'
@@ -88,7 +89,7 @@ class HtmlParser:
             tag.replace_with(f'[IMAGE] {src} [/IMAGE]')
         for tag in body.find_all(['p']):
             parargraph_text = tag.get_text(" ", strip=True).replace('\n', '')
-            tag.string = parargraph_text
+            tag.string = '[PARAGRAPH]' + parargraph_text + '[/PARAGRAPH]'
         for tag in body.find_all(['table']):
             trs = tag.find_all(['tr'])
             table_header_rows = trs[0]
@@ -133,10 +134,8 @@ def main():
         save_path = SAVE_PATH / name
         tasks.append((save_path, text))
     with ThreadPoolExecutor(max_workers=10) as executor:
-        list(tqdm(executor.map(save_txt_file, tasks),desc= f'Saving file...',total= len(tasks)))
-
+        list(tqdm(executor.map(save_txt_file, tasks), desc=f'Saving file...', total=len(tasks)))
 
 
 if __name__ == '__main__':
     main()
-
