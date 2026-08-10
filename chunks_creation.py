@@ -4,6 +4,8 @@ from typing import (List,
                     Final
                     )
 import re
+from langchain_core.documents import Document
+
 TITLE_SEPARATOR: Final[List[str]] = ['[TITLE]']
 HEADING_SEPARATORS: Final[List[str]] = [
     '[HEADING_h1]',
@@ -20,14 +22,14 @@ SEPARATORS: Final[List[str]] = [
     '[COMMANDS]',
     '[LIST]'
 ]
-FINAL_SEPARATORS = [
+FINAL_SEPARATORS: Final[List[str]] = [
     "\n\n",
     "\n",
     ". ",
     " ",
     ""
 ]
-DOCUMENTATION: str = collect_all_documentation()
+DOCUMENTATION_DATA: str = collect_all_documentation()
 
 
 def split_by_splitter(text: str, separators: List[str], chunk_size: int = 1000, chunk_overlap: int = 100) -> List[str]:
@@ -37,12 +39,24 @@ def split_by_splitter(text: str, separators: List[str], chunk_size: int = 1000, 
     split_text = splitter.split_text(text)
     return split_text
 
-def split_by_tags(text:str,tags:List[str]) -> List[str]:
+
+def split_by_tags(text: str, tags: List[str]) -> List[str]:
     pattern = "(?=" + "|".join(map(re.escape, tags)) + ")"
-    return [x for x in re.split(pattern,text) if x.strip()]
+    return [x for x in re.split(pattern, text) if x.strip()]
 
 
-title_split_text =split_by_tags(DOCUMENTATION,TITLE_SEPARATOR)
+chunked_docs_by_tags = []
+for doc in DOCUMENTATION_DATA:
+    path = doc.metadata.get('source', 'Not Found')
+    text = doc.page_content
+    for section in split_by_tags(text, HEADING_SEPARATORS):
+        for chunk in split_by_tags(section, SEPARATORS):
+            chunked_docs_by_tags.append(Document(
+                page_content=chunk,
+                metadata={'source': path}
+            ))
+
+'''
 splitted_text_by_tags = []
 splitted_text_by_splitter = []
 for text in title_split_text:
@@ -50,7 +64,8 @@ for text in title_split_text:
         for row in split_by_tags(line, SEPARATORS):
             splitted_text_by_tags.append(row)
 for text in splitted_text_by_tags:
-    splitted_text = split_by_splitter(text,FINAL_SEPARATORS)
+    splitted_text = split_by_splitter(text, FINAL_SEPARATORS)
     splitted_text_by_splitter.extend(splitted_text)
 
 print(splitted_text_by_splitter[56])
+'''

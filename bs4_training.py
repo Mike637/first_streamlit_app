@@ -10,6 +10,7 @@ from typing import List
 import os
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
+from langchain_core.documents import Document
 
 CURRENT_DIR = Path(__file__).parent
 HELP_PATH = CURRENT_DIR / 'help'
@@ -107,7 +108,8 @@ class HtmlParser:
             tag.string = '[PARAGRAPH]' + parargraph_text + '[/PARAGRAPH]'
 
         lines = [line for line in body.get_text(strip=False).split('\n') if line]
-        return f'{title_text}\n' + '\n'.join(line for line in lines).replace('\t', '').replace('\xa0', ' ')
+        return (f'{title_text}\n' +
+                '\n'.join(line for line in lines).replace('\t', '').replace('\xa0', ' '))
 
 
 def get_html_paths(folder_path: str) -> List[str]:
@@ -119,7 +121,7 @@ def get_html_paths(folder_path: str) -> List[str]:
     return html_files_list
 
 
-def save_txt_file(args):
+def save_txt_file(args) -> None:
     path, text = args
     with path.open('w', encoding='utf-8') as file:
         file.write(f'{path}\n')
@@ -145,17 +147,17 @@ def main():
 
 
 def collect_all_documentation():
-    text = ""
     for path in htmls:
         parser = HtmlParser(path)
-        doc = parser.main()
-        if not doc:
+        text = parser.main()
+        if not text:
             continue
-        text += f'{doc}\n'
-    return text
+        yield Document(page_content=text,
+                       metadata={'source': path}
+                       )
 
 
 if __name__ == '__main__':
-    main()
-    #res = collect_all_documentation()
-    #print(res)
+    # main()
+    # res = collect_all_documentation()
+    pass
