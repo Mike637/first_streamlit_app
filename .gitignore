@@ -11,3 +11,4 @@ example_db/
 .env
 training_help/
 text_files/
+vector_db/

@@ -7,6 +7,7 @@ from pydantic import SecretStr
 current_file = Path(__file__).absolute()
 current_dir = current_file.parent
 env_path = current_dir / '.env'
+vector_db_path = current_dir / 'vector_db'
 
 
 class Settings(BaseSettings):
