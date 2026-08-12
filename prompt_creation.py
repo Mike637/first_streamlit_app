@@ -7,7 +7,12 @@ from sentence_transformers import (SentenceTransformer,
                                    CrossEncoder)
 import os
 import numpy as np
-import streamlit as st
+import asyncio
+
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
 load_dotenv()
 llm = GigaChat(credentials=os.getenv("GIGA_CHAT_API_KEY"),
