@@ -1,5 +1,5 @@
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from bs4_training import collect_all_documentation
+from htms_parsing import collect_all_documentation
 from typing import (List,
                     Final
                     )
