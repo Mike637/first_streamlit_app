@@ -14,7 +14,7 @@ from langchain_core.documents import Document
 
 CURRENT_DIR = Path(__file__).parent
 HELP_PATH = CURRENT_DIR / 'help'
-HTML_FILE_PATH = Path(r'D:\first_streamlit_app\help\step_by_step_tutorials\step_by_step_tutorials.htm')
+HTML_FILE_PATH = Path(r'/help/step_by_step_tutorials/step_by_step_tutorials.htm')
 SAVE_PATH = CURRENT_DIR / 'text_files'
 
 
