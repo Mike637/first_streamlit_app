@@ -5,19 +5,20 @@ from pydantic_settings import (BaseSettings,
 from pydantic import SecretStr
 
 current_file = Path(__file__).absolute()
-current_dir = current_file.parent
+current_dir = current_file.parent.parent
 env_path = current_dir / '.env'
 vector_db_path = current_dir / 'vector_db'
 
-
+'''
 class Settings(BaseSettings):
     OPEN_AI_KEY: SecretStr
     GIGA_CHAT_API_KEY: SecretStr
     BASE_URL: str
     model_config = SettingsConfigDict(
-        env_file='../.env',
+        env_file='.env',
         env_file_encoding='utf-8'
     )
 
 
 settings = Settings()
+'''

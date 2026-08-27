@@ -24,7 +24,11 @@ reranker = CrossEncoder("BAAI/bge-reranker-v2-m3")
 
 def ask(query_text):
     query_vector = model.encode(query_text)
-    client = QdrantClient(path=vector_db_path)
+    # client = QdrantClient(path=vector_db_path)
+    client = QdrantClient(
+        url=os.getenv('QDRANT_URL'),
+        api_key=os.getenv('QDRANT_KEY'),
+        timeout=120)
     query_points = client.query_points(collection_name="help",
                                        query=query_vector,
                                        limit=20)
@@ -70,4 +74,4 @@ def ask(query_text):
 
 
 if __name__ == '__main__':
-    pass
+    print(ask('Что такое Fidesys'))

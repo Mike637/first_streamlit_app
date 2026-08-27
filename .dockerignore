@@ -1,0 +1,9 @@
+.venv/
+help/
+model/
+text_files/
+vector_db/
+__pycache__/
+*.pyc
+.git/
+.idea/
